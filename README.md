@@ -25,7 +25,7 @@ DIR_DETECT_OLD_FILES         = PT3M
 DIR_SLEEP_BETWEEN_LIST_FILES = PT1S
 LOKI_AUTH_USERNAME           = username
 OTLP_PUSH_HEADERS            = Authorization: Basic token1
-OTLP_PUSH_URL                = http://localhost:3100/loki/api/v1/push
+OTLP_PUSH_URL                = http://localhost:4318/v1/logs
 ```
 ## Config example
 

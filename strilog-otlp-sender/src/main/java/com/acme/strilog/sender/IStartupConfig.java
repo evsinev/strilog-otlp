@@ -7,7 +7,7 @@ import java.time.Duration;
 
 public interface IStartupConfig {
 
-    @AStartupParameter(name = "OTLP_PUSH_URL", value = "http://localhost:3100/v1/logs")
+    @AStartupParameter(name = "OTLP_PUSH_URL", value = "http://localhost:4318/v1/logs")
     String otlpPushUrl();
 
     @AStartupParameter(name = "OTLP_PUSH_HEADERS", value = "", maskVariable = true)
