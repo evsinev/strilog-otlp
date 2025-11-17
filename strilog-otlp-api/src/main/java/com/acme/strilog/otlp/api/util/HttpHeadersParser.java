@@ -8,7 +8,7 @@ public class HttpHeadersParser {
 
     public static String[] parseHeadersToArray(String aHeaders) {
         List<String>    headers = new ArrayList<>();
-        StringTokenizer st      = new StringTokenizer(aHeaders, "=:;,");
+        StringTokenizer st      = new StringTokenizer(aHeaders, "=,");
         while (st.hasMoreTokens()) {
             headers.add(st.nextToken().trim());
         }
