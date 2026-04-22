@@ -26,6 +26,8 @@ public class LogEvent {
     String              stacktrace;
     String              exceptionLine;
     String              exceptionMessage;
+    String              exceptionType;
     String              appName;
     String              appInstance;
+    String              version;
 }

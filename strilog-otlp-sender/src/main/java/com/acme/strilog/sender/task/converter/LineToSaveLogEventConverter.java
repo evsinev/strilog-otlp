@@ -3,7 +3,9 @@ package com.acme.strilog.sender.task.converter;
 import com.acme.strilog.otlp.api.model.request.OtlpAttribute;
 import com.acme.strilog.otlp.api.model.request.OtlpAttributeValue;
 import com.acme.strilog.otlp.api.model.request.OtlpLogRecord;
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.acme.strilog.sender.event.LogEvent;
 
 import java.util.List;
@@ -15,7 +17,12 @@ public class LineToSaveLogEventConverter implements ILineToItemConverter<OtlpLog
 
     private static final int INFO_LEVEL = 6;
 
-    private final Gson gson = new Gson();
+    private static final String MDC_TRACE_ID_KEY = "trace_id";
+    private static final String MDC_SPAN_ID_KEY  = "span_id";
+
+    private final Gson gson = new GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create();
 
     @Override
     public OtlpLogRecord convertToItem(String aLine) {
@@ -24,11 +31,17 @@ public class LineToSaveLogEventConverter implements ILineToItemConverter<OtlpLog
     }
 
     private OtlpLogRecord mapEvent(LogEvent aEvent) {
+        Map<String, String> mdc = aEvent.getMdc();
+        String traceId = mdc != null ? mdc.get(MDC_TRACE_ID_KEY) : null;
+        String spanId  = mdc != null ? mdc.get(MDC_SPAN_ID_KEY)  : null;
+
         return OtlpLogRecord.builder()
                 .body         ( OtlpAttributeValue.ofString(toMessage(aEvent)) )
                 .severityText ( aEvent.getLevel()                              )
                 .attributes   ( toAttributes(aEvent)                           )
                 .timeUnixNano ( toNanoEpoch(aEvent.getEpoch())                 )
+                .traceId      ( traceId                                        )
+                .spanId       ( spanId                                         )
                 .build();
     }
 
@@ -38,13 +51,18 @@ public class LineToSaveLogEventConverter implements ILineToItemConverter<OtlpLog
         builder.add("log.body.template"  , aEvent.getTemplate());
         builder.add("code.namespace"     , aEvent.getClazz());
         builder.add("thread.name"        , aEvent.getThread());
+        builder.add("service.version"    , aEvent.getVersion());
 
         builder.add("exception.message"   , aEvent.getExceptionMessage());
         builder.add("exception.stacktrace", aEvent.getStacktrace());
-        builder.add("exception.type"      , aEvent.getExceptionLine());
+        builder.add("exception.type"      , aEvent.getExceptionType());
+        builder.add("exception.line"      , aEvent.getExceptionLine());
 
         if (aEvent.getMdc() != null) {
             for (Map.Entry<String, String> entry : aEvent.getMdc().entrySet()) {
+                if (MDC_TRACE_ID_KEY.equals(entry.getKey()) || MDC_SPAN_ID_KEY.equals(entry.getKey())) {
+                    continue;
+                }
                 builder.add("mdc." + entry.getKey(), entry.getValue());
             }
         }
