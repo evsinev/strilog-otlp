@@ -49,7 +49,7 @@ public class LineToSaveLogEventConverter implements ILineToItemConverter<OtlpLog
         OtlpAttributesBuilder builder = new OtlpAttributesBuilder();
 
         builder.add("log.body.template"  , aEvent.getTemplate());
-        builder.add("code.namespace"     , aEvent.getClazz());
+        builder.add("otel.library.name"  , aEvent.getClazz());
         builder.add("thread.name"        , aEvent.getThread());
         builder.add("service.version"    , aEvent.getVersion());
 
@@ -61,6 +61,7 @@ public class LineToSaveLogEventConverter implements ILineToItemConverter<OtlpLog
         if (aEvent.getMdc() != null) {
             for (Map.Entry<String, String> entry : aEvent.getMdc().entrySet()) {
                 if (MDC_TRACE_ID_KEY.equals(entry.getKey()) || MDC_SPAN_ID_KEY.equals(entry.getKey())) {
+                    builder.add(entry.getKey(), entry.getValue());
                     continue;
                 }
                 builder.add("mdc." + entry.getKey(), entry.getValue());
