@@ -23,10 +23,21 @@ public class FileSenderImpl implements IFileSender{
     }
 
     public void sendFile(File file) {
-        LOG.info("Sending file {}...", file.getAbsolutePath());
+        long sentLines = offsetStore.getOffset(file.getName());
+        if (sentLines > 0) {
+            LOG.info("Sending file {} from line {}, the lines before were sent already ...", file.getAbsolutePath(), sentLines + 1);
+        } else {
+            LOG.info("Sending file {}...", file.getAbsolutePath());
+        }
+
+        batchSender.clearItems();
 
         try (LineNumberReader in = new LineNumberReader(new InputStreamReader(new FileInputStream(file), UTF_8))) {
             for (String line; (line = in.readLine()) != null; ) {
+                if (in.getLineNumber() <= sentLines) {
+                    continue;
+                }
+
                 batchSender.addLine(line);
                 
                 if(batchSender.shouldSend()) {
