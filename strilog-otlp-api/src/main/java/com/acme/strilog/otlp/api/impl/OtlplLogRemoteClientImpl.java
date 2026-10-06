@@ -3,8 +3,10 @@ package com.acme.strilog.otlp.api.impl;
 import com.acme.strilog.otlp.api.IOtlplLogRemoteService;
 import com.acme.strilog.otlp.api.messages.OtlpLogPushRequest;
 import com.acme.strilog.otlp.api.messages.OtlpLogPushResponse;
+import com.acme.strilog.otlp.api.model.response.OtlpError;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,8 @@ import static java.time.Duration.ofSeconds;
 public class OtlplLogRemoteClientImpl implements IOtlplLogRemoteService {
 
     private static final Logger LOG = LoggerFactory.getLogger(OtlplLogRemoteClientImpl.class);
+
+    private static final int MAX_LOGGED_BODY_CHARS = 1000;
 
     private final Gson gson = LOG.isTraceEnabled()
             ? new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
@@ -81,11 +85,41 @@ public class OtlplLogRemoteClientImpl implements IOtlplLogRemoteService {
                     .build();
         }
 
-        OtlpLogPushResponse otlpLogPushResponse = gson.fromJson(responseBody, OtlpLogPushResponse.class);
+        OtlpError           error               = parseError(responseBody);
+        OtlpLogPushResponse otlpLogPushResponse = OtlpLogPushResponse.builder()
+                .statusCode ( response.statusCode()                           )
+                .error      ( error                                           )
+                .body       ( error == null ? abbreviate(responseBody) : null )
+                .build();
 
         LOG.warn("Received unexpected response {}", otlpLogPushResponse);
 
         return otlpLogPushResponse;
+    }
+
+    /**
+     * OTLP/HTTP answers an error with google.rpc.Status, in JSON for a JSON request. A body of
+     * another shape (plain text, a proxy page) is not a Status: Gson turns it into an empty object
+     * or throws, so it goes to the log as it is.
+     */
+    private OtlpError parseError(String aBody) {
+        if (aBody == null || !aBody.stripLeading().startsWith("{")) {
+            return null;
+        }
+
+        try {
+            OtlpError error = gson.fromJson(aBody, OtlpError.class);
+            return error != null && error.getMessage() != null ? error : null;
+        } catch (JsonParseException e) {
+            return null;
+        }
+    }
+
+    private static String abbreviate(String aBody) {
+        if (aBody == null || aBody.length() <= MAX_LOGGED_BODY_CHARS) {
+            return aBody;
+        }
+        return aBody.substring(0, MAX_LOGGED_BODY_CHARS) + "... (" + aBody.length() + " chars)";
     }
 
     private HttpResponse<String> sendHttpRequest(HttpRequest request) {

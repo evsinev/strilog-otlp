@@ -37,4 +37,7 @@ public interface IStartupConfig {
     @AStartupParameter(name = "BATCH_ERROR_SLEEP", value = "PT1S")
     Duration batchErrorSleep();
 
+    @AStartupParameter(name = "BATCH_ERROR_SLEEP_MAX", value = "PT1M")
+    Duration batchErrorSleepMax();
+
 }

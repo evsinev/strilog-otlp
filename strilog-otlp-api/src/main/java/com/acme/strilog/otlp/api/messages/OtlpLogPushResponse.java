@@ -13,4 +13,5 @@ import static lombok.AccessLevel.PRIVATE;
 public class OtlpLogPushResponse {
     OtlpError error;
     int       statusCode;
+    String    body;
 }

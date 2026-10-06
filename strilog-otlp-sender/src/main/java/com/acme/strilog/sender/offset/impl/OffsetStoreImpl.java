@@ -7,9 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.Reader;
 import java.io.Writer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.newBufferedReader;
 import static java.nio.file.Files.newBufferedWriter;
 
 public class OffsetStoreImpl implements IOffsetStore {
@@ -39,5 +41,20 @@ public class OffsetStoreImpl implements IOffsetStore {
             throw new IllegalStateException("Cannot write config to file " + configFile.getAbsolutePath(), e);
         }
 
+    }
+
+    @Override
+    public long getOffset(String aFilename) {
+        if (!configFile.exists()) {
+            return 0;
+        }
+
+        try (Reader in = newBufferedReader(configFile.toPath(), UTF_8)) {
+            TOffsetConfig offsetConfig = gson.fromJson(in, TOffsetConfig.class);
+            return offsetConfig != null && aFilename.equals(offsetConfig.getFilename()) ? offsetConfig.getOffset() : 0;
+        } catch (Exception e) {
+            LOG.warn("Cannot read offset from {}, sending {} from the start", configFile.getAbsolutePath(), aFilename, e);
+            return 0;
+        }
     }
 }

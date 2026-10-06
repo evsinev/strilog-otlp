@@ -10,6 +10,7 @@ import com.acme.strilog.sender.offset.impl.OffsetStoreImpl;
 import com.acme.strilog.sender.task.batch.BatchItemSizeCalculatorImpl;
 import com.acme.strilog.sender.task.batch.BatchSender;
 import com.acme.strilog.sender.task.batch.BatchSenderClientImpl;
+import com.acme.strilog.sender.task.batch.OtlpLogRecordTruncator;
 import com.acme.strilog.sender.task.converter.LineToSaveLogEventConverter;
 import com.acme.strilog.sender.task.dir.DirSenderTask;
 import com.acme.strilog.sender.task.file.FileSenderImpl;
@@ -38,6 +39,7 @@ public class SenderApplication {
         ExecutorService executor = Executors.newFixedThreadPool(senderConfig.getDirs().size());
 
         BatchItemSizeCalculatorImpl batchItemSizeCalculator = new BatchItemSizeCalculatorImpl();
+        OtlpLogRecordTruncator      batchItemTruncator      = new OtlpLogRecordTruncator(batchItemSizeCalculator);
 
         Logger log = LoggerFactory.getLogger( SenderApplication.class );
 
@@ -60,9 +62,11 @@ public class SenderApplication {
                       new LineToSaveLogEventConverter()
                     , batchSenderClient
                     , batchItemSizeCalculator
+                    , batchItemTruncator
                     , config.maxBatchItems()
                     , config.maxBatchSize()
                     , config.batchErrorSleep()
+                    , config.batchErrorSleepMax()
             );
 
             executor.execute(new DirSenderTask(

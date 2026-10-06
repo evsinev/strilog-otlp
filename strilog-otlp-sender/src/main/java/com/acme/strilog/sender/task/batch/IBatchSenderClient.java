@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface IBatchSenderClient<I> {
 
-    void sendItems(List<I> aItems);
+    BatchSendResult sendItems(List<I> aItems);
 
 }
